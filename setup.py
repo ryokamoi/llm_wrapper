@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="llm_wrapper",
-    version="0.0.1",
+    version="0.1.0",
     description=".",
     author="Ryo Kamoi",
     author_email="ryokamoi.jp@gmail.com",
