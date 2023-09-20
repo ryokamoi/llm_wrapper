@@ -86,7 +86,7 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
         if "model" in updated_parameters:
             assert updated_parameters["model"] == model_name
         else:
-            updated_parameters["model"] = model_name
+            gpt_parameters["model"] = model_name
         updated_gpt_parameters = dict(gpt_parameters, **updated_parameters)
         
         from functools import partial
