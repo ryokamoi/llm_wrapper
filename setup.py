@@ -10,7 +10,7 @@ setup(
     license="MIT",
     python_requires=">=3.9",
     install_requires=[
-        "openai_api_wrapper @ git+ssh://git@github.com/ryokamoi/openai_api_wrapper", "easy_io @ git+ssh://git@github.com/ryokamoi/easy_io",
+        "openai_api_wrapper @ git+ssh://git@github.com/ryokamoi/openai_api_wrapper@0.4.0", "easy_io @ git+ssh://git@github.com/ryokamoi/easy_io@0.1.1",
         "google-generativeai", "cohere"
     ]
 )
