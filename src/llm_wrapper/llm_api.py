@@ -1,6 +1,6 @@
 from pathlib import Path
 import time
-from typing import Optional
+from typing import Optional, TypedDict
 
 import easy_io
 
@@ -36,10 +36,15 @@ cohere_parameters: dict = {
 }
 
 
+class LlmApiOutput(TypedDict):
+    prompt: str
+    response: str
+
+
 def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
             overwrite_cache: bool=False, cache_dir: Path=Path("./llm_cache"),
             add_output_string_for_non_chat_models: bool=True,
-            openai_organization: Optional[str]=None) -> dict[str, str]:
+            openai_organization: Optional[str]=None) -> LlmApiOutput:
     """Call LLM APIs. You may set the parameters by using parameter_update. Output format is {"prompt": str, "response": str}. Cache will be stored in cache_dir."""
     
     # udpate prompts for non-chat llms
