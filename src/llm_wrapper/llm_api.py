@@ -43,9 +43,13 @@ class LlmApiOutput(TypedDict):
 
 def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
             overwrite_cache: bool=False, cache_dir: Path=Path("./llm_cache"),
+            sleep_time: int=-1,
             add_output_string_for_non_chat_models: bool=True,
             openai_organization: Optional[str]=None) -> LlmApiOutput:
-    """Call LLM APIs. You may set the parameters by using parameter_update. Output format is {"prompt": str, "response": str}. Cache will be stored in cache_dir."""
+    """Call LLM APIs. You may set the parameters by using parameter_update. Output format is {"prompt": str, "response": str}. Cache will be stored in cache_dir.
+    
+    Args:
+        sleep_time (int, optional): Sleep time in seconds. If the value is negative, the default value for each model is used. Defaults to -1."""
     
     # udpate prompts for non-chat llms
     if add_output_string_for_non_chat_models and not is_this_model_for_chat(model_name):
@@ -95,7 +99,9 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
         updated_gpt_parameters = dict(gpt_parameters, **updated_parameters)
         
         from functools import partial
-        openai_text_api_partially_filled = partial(openai_text_api, cache_dir=cache_dir, overwrite_cache=overwrite_cache, organization=openai_organization)
+        openai_text_api_partially_filled = partial(openai_text_api,
+                                                   cache_dir=cache_dir, overwrite_cache=overwrite_cache, organization=openai_organization,
+                                                   sleep_time=1 if sleep_time < 0 else sleep_time)
         
         # call api
         if is_this_model_for_chat(model_name):  # chat models like gpt-4
@@ -137,7 +143,10 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
                 break
             
             # palm is limited to 30 requests per minute
-            time.sleep(3)
+            if sleep_time < 0:
+                time.sleep(3)
+            else:
+                time.sleep(sleep_time)
         elif "command" in model_name:  # cohere models
             import cohere
             
@@ -164,7 +173,10 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
                 break
 
             # trial key is limited to 5 calls/min
-            time.sleep(12)
+            if sleep_time < 0:
+                time.sleep(12)
+            else:
+                time.sleep(sleep_time)
         else:
             raise ValueError(f"model_name={model_name} is not implemented")
 
