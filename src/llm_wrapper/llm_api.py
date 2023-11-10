@@ -5,13 +5,13 @@ from typing import Optional, TypedDict
 import easy_io
 
 from llm_wrapper.utils import is_this_openai_model, is_this_model_for_chat
-from openai_api_wrapper.cache_utils import read_cached_output, dump_output_to_cache
+from llm_wrapper.cache_utils import read_cached_output, dump_output_to_cache
 
 
 gpt_parameters: dict = {
     "model": "",
     "temperature": 0.,
-    "max_tokens": 1024,
+    "max_tokens": 4096,
     "top_p": 1,
     "frequency_penalty": 0,
     "presence_penalty": 0,
