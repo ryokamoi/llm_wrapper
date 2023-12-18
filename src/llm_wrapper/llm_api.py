@@ -1,17 +1,19 @@
 from pathlib import Path
 import time
-from typing import Optional, TypedDict
+from typing import Optional, TypedDict, Any
 
 import easy_io
+from easyllm.prompt_utils.llama2 import build_llama2_prompt
 
 from llm_wrapper.utils import is_this_openai_model, is_this_model_for_chat
 from llm_wrapper.cache_utils import read_cached_output, dump_output_to_cache
+from llm_wrapper.llama2 import Llama2
 
 
 gpt_parameters: dict = {
     "model": "",
     "temperature": 0.,
-    "max_tokens": 4096,
+    "max_tokens": None,
     "top_p": 1,
     "frequency_penalty": 0,
     "presence_penalty": 0,
@@ -35,6 +37,13 @@ cohere_parameters: dict = {
     "return_likelihoods": 'NONE'
 }
 
+llama2_parameters: dict = {
+    "model": "meta-llama/Llama-2-70b-chat-hf",
+    "max_tokens": None,
+    "temperature": 0.5,
+    "top_p": 0.9,
+}
+
 
 class LlmApiOutput(TypedDict):
     prompt: str
@@ -42,6 +51,7 @@ class LlmApiOutput(TypedDict):
 
 
 def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
+            loaded_model: Any=None,
             overwrite_cache: bool=False, cache_dir: Path=Path("./llm_cache"),
             sleep_time: int=-1,
             add_output_string_for_non_chat_models: bool=True,
@@ -111,10 +121,17 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
             output = openai_text_api_partially_filled(mode="complete", parameters=dict(updated_gpt_parameters, prompt=prompt))
             response = output["response"]["choices"][0]["text"]
     else:
+        if model_name == "meta-llama/Llama-2-70b-chat-hf":
+            assert loaded_model is not None
+            loaded_model: Llama2 = loaded_model
+
+            input_prompt = build_llama2_prompt(prompt)
+            response = loaded_model.predict(input_prompt)
+        
         # LLM APIs can return errors even when the input is valid (e.g. busy server).
         # To avoid the errors, the code will try to call the api multiple times.
-        # If it hit the limit in loop_limit, the code will raise an error.
-        if model_name == "text-bison-001":  # google palm
+        # If it hit the limit in loop_limit, the code will raise an error.            
+        elif model_name == "text-bison-001":  # google palm
             import google.generativeai as palm
             
             # store your palm key in google_api_key.txt
