@@ -67,7 +67,9 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
     
     parameters = {}
     if not is_this_openai_model(model_name):
-        if model_name in ["claude-2"]:  # no parameters
+        if model_name == "meta-llama/Llama-2-70b-chat-hf":
+            parameters = llama2_parameters
+        elif model_name in ["claude-2"]:  # no parameters
             parameters = {"model_name": model_name}
         elif model_name == "text-bison-001":
             parameters = dict(palm_parameters, model=f"models/{model_name}")
@@ -99,7 +101,7 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
     
     # llm api
     if is_this_openai_model(model_name):  # openai models
-        from openai_api_wrapper.text_api import openai_text_api, get_chat_parameters
+        from llm_wrapper.openai_models import openai_text_api, get_chat_parameters
         
         # update parameters
         if "model" in updated_parameters:
