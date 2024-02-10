@@ -58,8 +58,7 @@ def openai_text_api(mode: Literal["complete", "chat", "edit"], parameters: Param
         raise ValueError(f"{openai_api_key_path} does not exist.")
     
     with open(openai_api_key_path, "r") as f:
-        api_key = f.read().strip()
-    openai.api_key = api_key
+        openai.api_key = f.read().strip()
     
     # prompt
     if mode == "chat":

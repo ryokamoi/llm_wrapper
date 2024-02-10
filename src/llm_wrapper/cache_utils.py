@@ -23,8 +23,9 @@ def read_cached_output(parameters: dict, prompt: str, cache_dir: Path = Path("./
     
     cache_path = get_cache_path(cache_dir, parameters, prompt)
     if cache_path.exists():
-        if parameters["temperature"] > 0.000001:
-            warnings.warn("Cache is read but temperature is not zero. Please use overwrite_cache=True if you want to get an updated output.")
+        if "embedding" not in parameters["model"]:
+            if parameters["temperature"] > 0.000001:
+                warnings.warn("Cache is read but temperature is not zero. Please use overwrite_cache=True if you want to get an updated output.")
         
         print(f"read cache from {cache_path}")
         with open(cache_path, "r") as f:

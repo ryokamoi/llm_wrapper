@@ -10,7 +10,7 @@ This is an unofficial wrapper for LLM APIs.
 
 ```sh
 pip install git+https://github.com/ryokamoi/llm_wrapper
-pip install --upgrade chardet
+pip install --upgrade chardet  # for llama2
 ```
 
 ## Example
