@@ -17,3 +17,12 @@ def is_llama_model(model_name: str) -> bool:
         return True
     
     return False
+
+
+def is_google_model(model_name: str) -> tuple[str, bool]:
+    if model_name in ["text-bison-001"]:
+        return "palm"
+    elif "gemini-" in model_name:
+        return "gemini"
+    
+    return False

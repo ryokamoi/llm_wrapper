@@ -96,3 +96,10 @@ def load_llama2(llama2_parameters: dict = default_dict) -> Llama2:
     del llama2_parameters["model_name"]
     
     return Llama2(model_path=llama2_path, **llama2_parameters)
+
+
+def build_llama2_prompt(prompt: str) -> str:
+    startPrompt = "<s>[INST] "
+    endPrompt = " [/INST]"
+    
+    return startPrompt + prompt + endPrompt

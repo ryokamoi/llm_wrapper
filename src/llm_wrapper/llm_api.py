@@ -3,11 +3,10 @@ import time
 from typing import Optional, TypedDict, Any
 
 import easy_io
-from easyllm.prompt_utils.llama2 import build_llama2_prompt
 
-from llm_wrapper.utils import is_openai_model, is_llama_model
+from llm_wrapper.utils import is_openai_model, is_llama_model, is_google_model
 from llm_wrapper.cache_utils import read_cached_output, dump_output_to_cache
-from llm_wrapper.llama2 import Llama2
+from llm_wrapper.llama2 import Llama2, build_llama2_prompt
 
 
 gpt_parameters: dict = {
@@ -54,7 +53,6 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
             loaded_model: Any=None,
             overwrite_cache: bool=False, cache_dir: Path=Path("./llm_cache"),
             sleep_time: int=-1,
-            add_output_string_for_non_chat_models: bool=True,
             openai_organization: Optional[str]=None) -> LlmApiOutput:
     """Call LLM APIs. You may set the parameters by using parameter_update. Output format is {"prompt": str, "response": str}. Cache will be stored in cache_dir.
     
@@ -67,8 +65,14 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
             parameters = dict(llama2_parameters, model_name=model_name)
         elif model_name in ["claude-2"]:  # no parameters
             parameters = {"model_name": model_name}
-        elif model_name == "text-bison-001":
-            parameters = dict(palm_parameters, model=f"models/{model_name}")
+        elif is_google_model(model_name):
+            if "models/" not in model_name:
+                model_name = f"models/{model_name}"
+            
+            if is_google_model == "palm":
+                parameters = dict(palm_parameters, model=model_name)
+            else:  # gemini
+                parameters = {"model": model_name}
         elif "command" in model_name:
             parameters = dict(cohere_parameters, model=model_name)
         else:
@@ -131,21 +135,25 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
         # LLM APIs can return errors even when the input is valid (e.g. busy server).
         # To avoid the errors, the code will try to call the api multiple times.
         # If it hit the limit in loop_limit, the code will raise an error.            
-        elif model_name == "text-bison-001":  # google palm
-            import google.generativeai as palm
+        elif is_google_model(model_name):  # google palm
+            import google.generativeai as genai
             
             # store your palm key in google_api_key.txt
-            palm_key_path = Path("../google_api_key.txt")
-            if not palm_key_path.exists():
-                raise FileNotFoundError(f"google_api_key.txt is not found in {palm_key_path}. Please create the file and write your palm key in the file.")
+            google_key_path = Path("../google_api_key.txt")
+            if not google_key_path.exists():
+                raise FileNotFoundError(f"google_api_key.txt is not found in {google_key_path}. Please create the file and write your palm key in the file.")
             
-            palm_key = easy_io.read_lines_from_txt_file(palm_key_path)[0]
-            palm.configure(api_key=palm_key)
+            google_key = easy_io.read_lines_from_txt_file(google_key_path)[0]
+            genai.configure(api_key=google_key)
             
             loop_limit = 10
             for loop_count in range(loop_limit):
                 try:
-                    response = palm.generate_text(**dict(parameters, prompt=prompt)).result
+                    if is_google_model(model_name) == "palm":
+                        response = genai.generate_text(**dict(parameters, prompt=prompt)).result
+                    else:
+                        model = genai.GenerativeModel(model_name)
+                        response = model.generate_content(prompt).text
                 except Exception as e:
                     print(e)
                     if loop_count == loop_limit -1:
