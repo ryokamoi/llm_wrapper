@@ -123,7 +123,7 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
             output = openai_text_api_partially_filled(mode="complete", parameters=dict(updated_gpt_parameters, prompt=prompt))
             response = output["response"]["choices"][0]["text"]
     else:
-        if model_name == "meta-llama/Llama-2-70b-chat-hf":
+        if "meta-llama/Llama-2-" in model_name:
             assert loaded_model is not None
             loaded_model: Llama2 = loaded_model
 
