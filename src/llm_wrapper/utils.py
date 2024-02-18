@@ -1,4 +1,4 @@
-def is_this_openai_model(model_name: str) -> bool:    
+def is_openai_model(model_name: str) -> bool:    
     if "gpt-" in model_name:
         return True
     
@@ -12,7 +12,14 @@ def is_this_openai_model(model_name: str) -> bool:
     return False
 
 
-def is_this_model_for_chat(model_name: str) -> bool:
+def is_llama_model(model_name: str) -> bool:
+    if "meta-llama/Llama-2-" in model_name or "lmsys/vicuna-" in model_name:
+        return True
+    
+    return False
+
+
+def is_model_for_chat(model_name: str) -> bool:
     if "gpt-" in model_name:
         return True
     

@@ -5,7 +5,7 @@ from typing import Optional, TypedDict, Any
 import easy_io
 from easyllm.prompt_utils.llama2 import build_llama2_prompt
 
-from llm_wrapper.utils import is_this_openai_model, is_this_model_for_chat
+from llm_wrapper.utils import is_openai_model, is_llama_model, is_model_for_chat
 from llm_wrapper.cache_utils import read_cached_output, dump_output_to_cache
 from llm_wrapper.llama2 import Llama2
 
@@ -62,13 +62,13 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
         sleep_time (int, optional): Sleep time in seconds. If the value is negative, the default value for each model is used. Defaults to -1."""
     
     # udpate prompts for non-chat llms
-    if add_output_string_for_non_chat_models and not is_this_model_for_chat(model_name):
+    if add_output_string_for_non_chat_models and not is_model_for_chat(model_name):
         prompt += "\n\nOutput:"
     
     parameters = {}
-    if not is_this_openai_model(model_name):
-        if model_name == "meta-llama/Llama-2-70b-chat-hf":
-            parameters = llama2_parameters
+    if not is_openai_model(model_name):
+        if is_llama_model(model_name):
+            parameters = dict(llama2_parameters, model_name=model_name)
         elif model_name in ["claude-2"]:  # no parameters
             parameters = {"model_name": model_name}
         elif model_name == "text-bison-001":
@@ -82,7 +82,7 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
     
     # read cache
     cached_output = {}
-    if not overwrite_cache and not is_this_openai_model(model_name):
+    if not overwrite_cache and not is_openai_model(model_name):
         # cache for openai models will be handled by openai_api_wrapper
         
         # for other models:
@@ -100,7 +100,7 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
             # otherwise, the cache is ignored and the code will continue to call the api
     
     # llm api
-    if is_this_openai_model(model_name):  # openai models
+    if is_openai_model(model_name):  # openai models
         from llm_wrapper.openai_models import openai_text_api, get_chat_parameters
         
         # update parameters
@@ -116,14 +116,14 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
                                                    sleep_time=1 if sleep_time < 0 else sleep_time)
         
         # call api
-        if is_this_model_for_chat(model_name):  # chat models like gpt-4
+        if is_model_for_chat(model_name):  # chat models like gpt-4
             output = openai_text_api_partially_filled(mode="chat", parameters=get_chat_parameters(prompt=prompt, parameters=updated_gpt_parameters))
             response = output["response"]["choices"][0]["message"]["content"]
         else:  # completion models like text-davinci-003
             output = openai_text_api_partially_filled(mode="complete", parameters=dict(updated_gpt_parameters, prompt=prompt))
             response = output["response"]["choices"][0]["text"]
     else:
-        if "meta-llama/Llama-2-" in model_name:
+        if is_llama_model(model_name):
             assert loaded_model is not None
             loaded_model: Llama2 = loaded_model
 

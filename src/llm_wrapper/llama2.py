@@ -10,6 +10,7 @@ class Llama2(LLM):
     top_p: float = 0.9
     max_tokens: int = 2048
     do_sample: bool = True
+    model_name_or_path: str = None
     tokenizer: Any
     model: Any
 
@@ -19,6 +20,7 @@ class Llama2(LLM):
         self.temperature = temperature
         self.do_sample = do_sample
         self.max_tokens = max_tokens
+        self.model_name_or_path = model_name_or_path
         
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, use_fast=False
@@ -83,7 +85,7 @@ default_dict = {
 
 
 def load_llama2(llama2_parameters: dict = default_dict) -> Llama2:
-    with open("../llama2_path.txt", "r") as f:
+    with open("../huggingface_model_path.txt", "r") as f:
         llama2_path = f.read()
     
     if "do_sample" == False:
