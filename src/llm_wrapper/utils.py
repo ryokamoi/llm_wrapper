@@ -17,10 +17,3 @@ def is_llama_model(model_name: str) -> bool:
         return True
     
     return False
-
-
-def is_model_for_chat(model_name: str) -> bool:
-    if "gpt-" in model_name:
-        return True
-    
-    return False
