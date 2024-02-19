@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="llm_wrapper",
-    version="0.3.1",
+    version="0.3.2",
     description="This project includes an unofficial wrapper for LLM APIs.",
     author="Ryo Kamoi",
     author_email="ryokamoi.jp@gmail.com",

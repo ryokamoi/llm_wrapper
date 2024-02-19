@@ -12,8 +12,22 @@ def is_openai_model(model_name: str) -> bool:
     return False
 
 
+def is_open_model(model_name: str) -> bool:
+    if is_llama_model(model_name) or is_qwen_model(model_name):
+        return True
+    
+    return False
+
+
 def is_llama_model(model_name: str) -> bool:
     if "meta-llama/Llama-2-" in model_name or "lmsys/vicuna-" in model_name or "mistralai/Mixtral-" in model_name:
+        return True
+    
+    return False
+
+
+def is_qwen_model(model_name: str) -> bool:
+    if "Qwen/Qwen" in model_name:
         return True
     
     return False

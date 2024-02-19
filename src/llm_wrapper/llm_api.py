@@ -4,9 +4,10 @@ from typing import Optional, TypedDict, Any
 
 import easy_io
 
-from llm_wrapper.utils import is_openai_model, is_llama_model, is_google_model
+from llm_wrapper.utils import is_openai_model, is_google_model, is_open_model, is_llama_model, is_qwen_model
 from llm_wrapper.cache_utils import read_cached_output, dump_output_to_cache
-from llm_wrapper.llama2 import Llama2, build_llama2_prompt
+from llm_wrapper.open_models import OpenModel
+from llm_wrapper.llama2 import Llama2
 
 
 gpt_parameters: dict = {
@@ -43,6 +44,11 @@ llama2_parameters: dict = {
     "top_p": 0.9,
 }
 
+qwen_parameters: dict = {
+    "model": "Qwen/Qwen1.5-72B-Chat",
+    "max_new_tokens": None,
+}
+
 
 class LlmApiOutput(TypedDict):
     prompt: str
@@ -63,8 +69,8 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
     if not is_openai_model(model_name):
         if is_llama_model(model_name):
             parameters = dict(llama2_parameters, model_name=model_name)
-        elif model_name in ["claude-2"]:  # no parameters
-            parameters = {"model_name": model_name}
+        elif is_qwen_model(model_name):
+            parameters = {"model": model_name}
         elif is_google_model(model_name):
             if "models/" not in model_name:
                 model_name = f"models/{model_name}"
@@ -125,12 +131,15 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
         #     output = openai_text_api_partially_filled(mode="complete", parameters=dict(updated_gpt_parameters, prompt=prompt))
         #     response = output["response"]["choices"][0]["text"]
     else:
-        if is_llama_model(model_name):
+        if is_open_model(model_name):
             assert loaded_model is not None
-            loaded_model: Llama2 = loaded_model
-
-            input_prompt = build_llama2_prompt(prompt)
-            response = loaded_model.predict(input_prompt)
+            
+            if is_llama_model(model_name):
+                loaded_model: Llama2 = loaded_model
+                response = loaded_model.predict(prompt)
+            else:
+                loaded_model: OpenModel = loaded_model
+                response = loaded_model(prompt, parameters=parameters)
         
         # LLM APIs can return errors even when the input is valid (e.g. busy server).
         # To avoid the errors, the code will try to call the api multiple times.

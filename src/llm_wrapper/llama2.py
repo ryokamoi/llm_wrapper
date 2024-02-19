@@ -14,7 +14,7 @@ class Llama2(LLM):
     tokenizer: Any
     model: Any
 
-    def __init__(self, model_name_or_path, model_path=None, temperature=0.1, do_sample=True, max_tokens=2048, bit4=False):
+    def __init__(self, model_name_or_path, cache_dir=None, temperature=0.1, do_sample=True, max_tokens=2048, bit4=False):
         super().__init__()
         
         self.temperature = temperature
@@ -23,7 +23,7 @@ class Llama2(LLM):
         self.model_name_or_path = model_name_or_path
         
         self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name_or_path, use_fast=False
+            model_name_or_path, use_fast=False, cache_dir=cache_dir,
         )
         self.tokenizer.pad_token = self.tokenizer.eos_token
         if bit4 == False:
@@ -34,7 +34,7 @@ class Llama2(LLM):
                 device_map="auto",
                 torch_dtype=torch.float16,
                 load_in_8bit=False,
-                cache_dir=model_path,
+                cache_dir=cache_dir,
             )
             self.model.eval()
         else:
@@ -44,7 +44,7 @@ class Llama2(LLM):
                 model_name_or_path,
                 device_map="auto",
                 torch_dtype=torch.float16,
-                cache_dir=model_path,
+                cache_dir=cache_dir,
             )
             self.model.eval()
 
@@ -53,6 +53,8 @@ class Llama2(LLM):
         return "Llama2"
 
     def _call(self, prompt: str, stop: Optional[List[str]] = None) -> str:
+        prompt = build_llama2_prompt(prompt)
+        
         input_ids = self.tokenizer(
             prompt, return_tensors="pt", add_special_tokens=False
         ).input_ids.to("cuda")
@@ -82,20 +84,6 @@ default_dict = {
     "max_tokens": None,
     "do_sample": True,
 }
-
-
-def load_llama2(llama2_parameters: dict = default_dict) -> Llama2:
-    with open("../huggingface_model_path.txt", "r") as f:
-        llama2_path = f.read()
-    
-    if "do_sample" == False:
-        llama2_parameters["temperature"] = None
-    
-    # change key model_name to model_name_or_path
-    llama2_parameters["model_name_or_path"] = llama2_parameters["model_name"]
-    del llama2_parameters["model_name"]
-    
-    return Llama2(model_path=llama2_path, **llama2_parameters)
 
 
 def build_llama2_prompt(prompt: str) -> str:
