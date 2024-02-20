@@ -16,8 +16,9 @@ class OpenModel():
             model_name_or_path,
             device_map="auto",
             cache_dir=cache_dir,
+            trust_remote_code=False,
         )
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, cache_dir=cache_dir)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, cache_dir=cache_dir, trust_remote_code=False)
         self.tokenizer.pad_token = self.tokenizer.eos_token
     
     @staticmethod
@@ -38,6 +39,7 @@ class OpenModel():
         
         if is_qwen_model(self.model_name_or_path):
             messages = [
+                {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
             ]
         else:
