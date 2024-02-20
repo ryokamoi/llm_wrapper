@@ -150,10 +150,33 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
             # store your palm key in google_api_key.txt
             google_key_path = Path("../google_api_key.txt")
             if not google_key_path.exists():
-                raise FileNotFoundError(f"google_api_key.txt is not found in {google_key_path}. Please create the file and write your palm key in the file.")
+                raise FileNotFoundError(f"google_api_key.txt is not found in {google_key_path}. Please create the file and write your Google API key in the file. You can create your API at https://ai.google.dev/")
             
             google_key = easy_io.read_lines_from_txt_file(google_key_path)[0]
             genai.configure(api_key=google_key)
+            
+            safety_settings = [
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS",
+                    "threshold": "BLOCK_NONE",
+                },
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "threshold": "BLOCK_NONE",
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH",
+                    "threshold": "BLOCK_NONE",
+                },
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "threshold": "BLOCK_NONE",
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "threshold": "BLOCK_NONE",
+                },
+            ]
             
             loop_limit = 10
             for loop_count in range(loop_limit):
@@ -161,12 +184,16 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
                     if is_google_model(model_name) == "palm":
                         response = genai.generate_text(**dict(parameters, prompt=prompt)).result
                     else:
-                        model = genai.GenerativeModel(model_name)
-                        response = model.generate_content(prompt).text
+                        model = genai.GenerativeModel(model_name, safety_settings=safety_settings)
+                        full_response = model.generate_content(prompt)
+                        response = full_response.text
                 except Exception as e:
                     print(e)
+                    if "response.prompt_feedback" in str(e):
+                        print(full_response.prompt_feedback)
+                    
                     if loop_count == loop_limit -1:
-                        raise Exception(f"Received {loop_limit} Response Error for the same input from Palm. Please try again later.\nPrompt:\n{prompt}")
+                        raise Exception(f"Received {loop_limit} Response Error for the same input from the Google model. Please try again later.\nPrompt:\n{prompt}")
                     print("Wait for 10 seconds.")
                     time.sleep(10)
                     continue
