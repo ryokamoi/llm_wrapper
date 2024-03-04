@@ -57,9 +57,17 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
         if is_open_model(model_name):
             parameters = {"model": model_name}
             
+            # do_sample = False case
+            if "do_sample" in updated_parameters.keys():
+                if not updated_parameters["do_sample"]:
+                    updated_parameters["temperature"] = 0
+
             if "temperature" in updated_parameters:
                 if updated_parameters["temperature"] == 0:
                     updated_parameters["do_sample"] = False
+                    updated_parameters["temperature"] = None
+                    updated_parameters["top_p"] = None
+                    updated_parameters["top_k"] = None
                 else:
                     updated_parameters["do_sample"] = True
         elif is_gemini(model_name):
