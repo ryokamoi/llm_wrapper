@@ -4,10 +4,9 @@ from typing import Optional, TypedDict, Any
 
 import easy_io
 
-from llm_wrapper.utils import is_openai_model, is_google_model, is_open_model, is_llama_model, is_qwen_model
+from llm_wrapper.utils import is_openai_model, is_gemini, is_open_model
 from llm_wrapper.cache_utils import read_cached_output, dump_output_to_cache
 from llm_wrapper.open_models import OpenModel
-from llm_wrapper.llama2 import Llama2
 
 
 gpt_parameters: dict = {
@@ -37,18 +36,6 @@ cohere_parameters: dict = {
     "return_likelihoods": 'NONE'
 }
 
-llama2_parameters: dict = {
-    "model": "meta-llama/Llama-2-70b-chat-hf",
-    "max_tokens": None,
-    "temperature": 0.5,
-    "top_p": 0.9,
-}
-
-qwen_parameters: dict = {
-    "model": "Qwen/Qwen1.5-72B-Chat",
-    "max_new_tokens": None,
-}
-
 
 class LlmApiOutput(TypedDict):
     prompt: str
@@ -67,15 +54,19 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
     
     parameters = {}
     if not is_openai_model(model_name):
-        if is_llama_model(model_name):
-            parameters = dict(llama2_parameters, model_name=model_name)
-        elif is_qwen_model(model_name):
+        if is_open_model(model_name):
             parameters = {"model": model_name}
-        elif is_google_model(model_name):
+            
+            if "temperature" in updated_parameters:
+                if updated_parameters["temperature"] == 0:
+                    updated_parameters["do_sample"] = False
+                else:
+                    updated_parameters["do_sample"] = True
+        elif is_gemini(model_name):
             if "models/" not in model_name:
                 model_name = f"models/{model_name}"
             
-            if is_google_model == "palm":
+            if is_gemini == "palm":
                 parameters = dict(palm_parameters, model=model_name)
             else:  # gemini
                 parameters = {"model": model_name}
@@ -134,17 +125,13 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
         if is_open_model(model_name):
             assert loaded_model is not None
             
-            if is_llama_model(model_name):
-                loaded_model: Llama2 = loaded_model
-                response = loaded_model.predict(prompt)
-            else:
-                loaded_model: OpenModel = loaded_model
-                response = loaded_model(prompt, parameters=parameters)
+            loaded_model: OpenModel = loaded_model
+            response = loaded_model(prompt, parameters=parameters)
         
         # LLM APIs can return errors even when the input is valid (e.g. busy server).
         # To avoid the errors, the code will try to call the api multiple times.
         # If it hit the limit in loop_limit, the code will raise an error.            
-        elif is_google_model(model_name):  # google palm
+        elif is_gemini(model_name):  # google palm
             import google.generativeai as genai
             
             # store your palm key in google_api_key.txt
@@ -181,7 +168,7 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
             loop_limit = 10
             for loop_count in range(loop_limit):
                 try:
-                    if is_google_model(model_name) == "palm":
+                    if is_gemini(model_name) == "palm":
                         response = genai.generate_text(**dict(parameters, prompt=prompt)).result
                     else:
                         model = genai.GenerativeModel(model_name, safety_settings=safety_settings)

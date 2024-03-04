@@ -12,15 +12,33 @@ def is_openai_model(model_name: str) -> bool:
     return False
 
 
+def is_gemini(model_name: str) -> tuple[str, bool]:
+    if model_name in ["text-bison-001"]:
+        return "palm"
+    elif "gemini-" in model_name:
+        return "gemini"
+    
+    return False
+
+
 def is_open_model(model_name: str) -> bool:
-    if is_llama_model(model_name) or is_qwen_model(model_name):
+    if is_llama_model(model_name):
+        return True
+    
+    if is_qwen_model(model_name):
+        return True
+    
+    if is_gemma(model_name):
+        return True
+
+    if "mistralai/Mixtral-" in model_name:
         return True
     
     return False
 
 
 def is_llama_model(model_name: str) -> bool:
-    if "meta-llama/Llama-2-" in model_name or "lmsys/vicuna-" in model_name or "mistralai/Mixtral-" in model_name:
+    if "meta-llama/Llama-2-" in model_name:
         return True
     
     return False
@@ -33,10 +51,8 @@ def is_qwen_model(model_name: str) -> bool:
     return False
 
 
-def is_google_model(model_name: str) -> tuple[str, bool]:
-    if model_name in ["text-bison-001"]:
-        return "palm"
-    elif "gemini-" in model_name:
-        return "gemini"
-    
+def is_gemma(model_name: str) -> bool:
+    if "google/gemma" in model_name:
+        return True
+
     return False
