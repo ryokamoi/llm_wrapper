@@ -4,7 +4,7 @@ from typing import Optional, TypedDict, Any
 
 import easy_io
 
-from llm_wrapper.utils import is_openai_model, is_gemini, is_open_model
+from llm_wrapper.utils import is_openai_model, is_gemini, is_claude, is_open_model
 from llm_wrapper.cache_utils import read_cached_output, dump_output_to_cache
 from llm_wrapper.open_models import OpenModel
 
@@ -70,6 +70,8 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
                 parameters = dict(palm_parameters, model=model_name)
             else:  # gemini
                 parameters = {"model": model_name}
+        elif is_claude(model_name):
+            parameters = {"model": model_name}
         elif "command" in model_name:
             parameters = dict(cohere_parameters, model=model_name)
         else:
@@ -195,6 +197,24 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
                 time.sleep(3)
             else:
                 time.sleep(sleep_time)
+        elif is_claude(model_name):
+            import anthropic
+            
+            # api key
+            api_path = Path("../anthropic_api_key.txt")
+            if not api_path.exists():
+                raise FileNotFoundError(f"anthropic_api_key.txt is not found in {api_path}. Please create the file and write your anthropic key in the file.")
+            anthropic_key = easy_io.read_lines_from_txt_file(api_path)[0]
+            
+            # call api
+            client = anthropic.Anthropic(api_key=anthropic_key)
+            response = client.messages.create(
+                model=model_name,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                **updated_parameters,
+            ).content[0].text
         elif "command" in model_name:  # cohere models
             import cohere
             

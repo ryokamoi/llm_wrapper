@@ -21,6 +21,13 @@ def is_gemini(model_name: str) -> tuple[str, bool]:
     return False
 
 
+def is_claude(model_name: str) -> bool:
+    if "claude-" in model_name:
+        return True
+    
+    return False
+
+
 def is_open_model(model_name: str) -> bool:
     if is_llama_model(model_name):
         return True
