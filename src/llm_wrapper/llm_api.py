@@ -37,6 +37,14 @@ cohere_parameters: dict = {
 }
 
 
+def loop_process(error_message: str, model_name: str, prompt: str, loop_count: int, loop_limit: int, sleep_time: int=5):
+    print(error_message)
+    if loop_count == loop_limit -1:
+        raise Exception(f"Received {loop_limit} Response Error for the same input from {model_name}. Please try again later.\nPrompt:\n{prompt}")
+    print(f"Wait for {sleep_time} seconds.")
+    time.sleep(sleep_time)
+
+
 class LlmApiOutput(TypedDict):
     prompt: str
     response: str
@@ -120,7 +128,7 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
         from functools import partial
         openai_text_api_partially_filled = partial(openai_text_api,
                                                    cache_dir=cache_dir, overwrite_cache=overwrite_cache, organization=openai_organization,
-                                                   sleep_time=1 if sleep_time < 0 else sleep_time)
+                                                   sleep_time=0 if sleep_time < 0 else sleep_time)
         
         # call api
         output = openai_text_api_partially_filled(mode="chat", parameters=get_chat_parameters(prompt=prompt, parameters=updated_gpt_parameters))
@@ -185,14 +193,10 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
                         full_response = model.generate_content(prompt)
                         response = full_response.text
                 except Exception as e:
-                    print(e)
                     if "response.prompt_feedback" in str(e):
                         print(full_response.prompt_feedback)
-                    
-                    if loop_count == loop_limit -1:
-                        raise Exception(f"Received {loop_limit} Response Error for the same input from the Google model. Please try again later.\nPrompt:\n{prompt}")
-                    print("Wait for 10 seconds.")
-                    time.sleep(10)
+
+                    loop_process(str(e), model_name, prompt, loop_count, loop_limit, sleep_time=10)
                     continue
                 
                 if response is None:
@@ -215,14 +219,21 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
             anthropic_key = easy_io.read_lines_from_txt_file(api_path)[0]
             
             # call api
-            client = anthropic.Anthropic(api_key=anthropic_key)
-            response = client.messages.create(
-                model=model_name,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                **updated_parameters,
-            ).content[0].text
+            loop_limit = 10
+            for loop_count in range(loop_limit):
+                try:
+                    client = anthropic.Anthropic(api_key=anthropic_key)
+                    response = client.messages.create(
+                        messages=[
+                            {"role": "user", "content": prompt}
+                        ],
+                        **parameters,
+                    ).content[0].text
+                except Exception as e:
+                    loop_process(str(e), model_name, prompt, loop_count, loop_limit, sleep_time=5)
+                    continue
+                break
+                
         elif "command" in model_name:  # cohere models
             import cohere
             
@@ -240,11 +251,7 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
                 try:
                     response = co.generate(**dict(parameters, prompt=prompt)).generations[0].text
                 except Exception as e:
-                    print(e)
-                    if loop_count == loop_limit -1:
-                        raise Exception(f"Received {loop_limit} Response Error for the same input from {model_name}. Please try again later.\nPrompt:\n{prompt}")
-                    print("Wait for 60 seconds.")
-                    time.sleep(60)
+                    loop_process(str(e), model_name, prompt, loop_count, loop_limit, sleep_time=60)
                     continue
                 break
 
