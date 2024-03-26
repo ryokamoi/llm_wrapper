@@ -37,29 +37,7 @@ cohere_parameters: dict = {
 }
 
 
-def loop_process(error_message: str, model_name: str, prompt: str, loop_count: int, loop_limit: int, sleep_time: int=5):
-    print(error_message)
-    if loop_count == loop_limit -1:
-        raise Exception(f"Received {loop_limit} Response Error for the same input from {model_name}. Please try again later.\nPrompt:\n{prompt}")
-    print(f"Wait for {sleep_time} seconds.")
-    time.sleep(sleep_time)
-
-
-class LlmApiOutput(TypedDict):
-    prompt: str
-    response: str
-
-
-def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
-            loaded_model: Any=None,
-            overwrite_cache: bool=False, cache_dir: Path=Path("./llm_cache"),
-            sleep_time: int=-1,
-            openai_organization: Optional[str]=None) -> LlmApiOutput:
-    """Call LLM APIs. You may set the parameters by using parameter_update. Output format is {"prompt": str, "response": str}. Cache will be stored in cache_dir.
-    
-    Args:
-        sleep_time (int, optional): Sleep time in seconds. If the value is negative, the default value for each model is used. Defaults to -1."""
-    
+def preprocess_parameters(model_name: str, updated_parameters: dict) -> dict:
     parameters = {}
     if not is_openai_model(model_name):
         if is_open_model(model_name):
@@ -94,6 +72,34 @@ def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
             raise ValueError(f"{model_name} is an invalid value for model_name argument.")
         
         parameters = dict(parameters, **updated_parameters)
+    
+    return parameters
+
+
+def loop_process(error_message: str, model_name: str, prompt: str, loop_count: int, loop_limit: int, sleep_time: int=5):
+    print(error_message)
+    if loop_count == loop_limit -1:
+        raise Exception(f"Received {loop_limit} Response Error for the same input from {model_name}. Please try again later.\nPrompt:\n{prompt}")
+    print(f"Wait for {sleep_time} seconds.")
+    time.sleep(sleep_time)
+
+
+class LlmApiOutput(TypedDict):
+    prompt: str
+    response: str
+
+
+def llm_api(model_name: str, prompt: str, updated_parameters: dict={},
+            loaded_model: Any=None,
+            overwrite_cache: bool=False, cache_dir: Path=Path("./llm_cache"),
+            sleep_time: int=-1,
+            openai_organization: Optional[str]=None) -> LlmApiOutput:
+    """Call LLM APIs. You may set the parameters by using parameter_update. Output format is {"prompt": str, "response": str}. Cache will be stored in cache_dir.
+    
+    Args:
+        sleep_time (int, optional): Sleep time in seconds. If the value is negative, the default value for each model is used. Defaults to -1."""
+
+    parameters = preprocess_parameters(model_name=model_name, updated_parameters=updated_parameters)    
     
     # read cache
     cached_output = {}
