@@ -38,7 +38,7 @@ def is_open_model(model_name: str) -> bool:
     if is_gemma(model_name):
         return True
 
-    if "mistralai/Mixtral-" in model_name:
+    if "mistralai/" in model_name:
         return True
     
     return False
