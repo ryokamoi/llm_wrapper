@@ -4,8 +4,6 @@ from pathlib import Path
 
 import openai
 
-from llm_wrapper.cache_utils import read_cached_output, dump_output_to_cache
-
 
 # ParamsType = dict[str, Union[str, float]]
 class ParamsType(TypedDict):
@@ -14,24 +12,8 @@ class ParamsType(TypedDict):
     messages: list[dict[str, str]]
 
 
-def read_cache_openai(cache_dir: Path, parameters: ParamsType) -> dict:
-    cached_output = {}
-    # if parameters["temperature"] < 0.000001:  # if temperature == 0
-    # prompt is included in the parameters in openai
-    cached_output = read_cached_output(parameters=dict(parameters), prompt="", cache_dir=cache_dir)
-    
-    return cached_output
-
-
-def dump_cache_openai(output_dict: dict, cache_dir: Path, parameters: ParamsType):
-    # if parameters["temperature"] < 0.00001:  # == 0
-    # prompt is included in the parameters in openai
-    dump_output_to_cache(output_dict=output_dict, parameters=dict(parameters), prompt="", cache_dir=cache_dir)
-
-
 def get_chat_parameters(prompt: str, parameters: ParamsType) -> ParamsType:
-    parameters["messages"] = [{"role": "user", "content": prompt}]
-    return parameters
+    return dict(parameters, messages=[{"role": "user", "content": prompt}])
 
 
 def get_edit_parameters(input_sentence: str, instruction: str, parameters: ParamsType):
@@ -40,16 +22,8 @@ def get_edit_parameters(input_sentence: str, instruction: str, parameters: Param
 
 def openai_text_api(mode: Literal["complete", "chat", "edit"], parameters: ParamsType,
                     openai_api_key_path: Optional[Path]=Path("../openai_api_key.txt"),
-                    sleep_time: int=1,
-                    cache_dir: Optional[Path]=Path("./openai_cache"), overwrite_cache: bool=False,
                     organization: Optional[str] = None):
     """OpenAI API wrapper for text completion, chat, and edit."""
-
-    # load cache
-    if not overwrite_cache and cache_dir is not None:
-        cached_output = read_cache_openai(cache_dir, parameters)
-        if len(cached_output) > 0:
-            return cached_output
     
     if organization is not None:
         openai.organization = organization
@@ -102,10 +76,4 @@ def openai_text_api(mode: Literal["complete", "chat", "edit"], parameters: Param
         "prompt": prompt, "response": response,
     }
     
-    # dump cache
-    if cache_dir is not None:
-        dump_cache_openai(output_dict, cache_dir, parameters)
-    
-    # avoid too many access
-    time.sleep(sleep_time)
     return output_dict
